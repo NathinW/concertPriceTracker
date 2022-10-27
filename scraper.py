@@ -22,6 +22,32 @@ class Calendar(Enum):
     Nov = 11
     Dec = 12
 
+class Concert:
+    concertName = ""
+    concertDate = None 
+    
+    def __init__(self, concertNameDate):
+        self.concertName = concertNameDate[1]
+        self.concertDate = parseDate(concertNameDate[0])
+        self.prices = [] 
+
+    def __eq__(self, other):
+        if isinstance(other, Concert):
+            return self.concertName == other.concertName
+        else:
+            return False
+
+    def addPrice(self, newPrice):
+        dateCollected = datetime.datetime.now()
+        self.prices.append([dateCollected, newPrice])
+
+    def __str__(self):
+        output = self.concertName + " |DATE: " + self.concertDate.strftime("%x") + "| PRICES: ["
+        for price in self.prices:
+            output += "(" + price[0].strftime("%x") + " $"
+            output += str(price[1]) + ") "
+        return output + "]"
+
 def parseDate(concertNameDate):
         now = datetime.datetime.now()
         day = 0
@@ -42,28 +68,8 @@ def parseDate(concertNameDate):
             day = int(dayCode[0:2])
             year = int(dayCode[-4]) 
             return datetime.datetime(year, month, day)
-        
-                
-
-class Concert:
-    concertName = ""
-    concertDate = None 
-    
-    def __init__(self, concertNameDate):
-        self.concertName = concertNameDate[1]
-        self.concertDate = parseDate(concertNameDate[0])
-        self.prices = [] 
-
-    def __eq__(self, other):
-        if isinstance(other, Concert):
-            return self.concertName == other.concertName
-        else:
-            return False
-    def __str__(self):
-        return self.concertName + " |DATE: " + self.concertDate.strftime("%x") + "| " + str(self.prices)
-        
+  
 class ScrapeSeatgeek:
-
     def parseArrays(concertsAndPrices, previousConcertArray):
         concertsArray = []
         concertNames = concertsAndPrices[0]
@@ -74,21 +80,20 @@ class ScrapeSeatgeek:
                 concert = Concert(concertNames[i])
                 if concert in previousConcertArray:
                     index = previousConcertArray.index(concert)
-                    previousConcertArray[index].prices.append(concertPrices[i])
+                    previousConcertArray[index].addPrice(concertPrices[i])
                 else:
-                    concert.prices.append(concertPrices[i])
+                    concert.addPrice(concertPrices[i])
                     concertsArray.append(concert)
                 i += 1
+            concertsArray = previousConcertArray
         else:
                 i = 0
                 while i < len(concertNames):
                     newConcert = Concert(concertNames[i])
-                    newConcert.prices.append(concertPrices[i])
+                    newConcert.addPrice(concertPrices[i])
                     concertsArray.append(newConcert)
                     i+=1
         return concertsArray
-            
-
 
     def runScrape():
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
@@ -121,10 +126,24 @@ class ScrapeSeatgeek:
             raise Exception("Array of concerts lengeth doesn't match prices")
         return returnArray
 
-CONCERT_AND_PRICES = []
+class ConcertStorage:
+    def __init__(self):
+        self.CONCERT_AND_PRICES = ScrapeSeatgeek.parseArrays(ScrapeSeatgeek.runScrape(), [])
 
-CONCERT_AND_PRICES = ScrapeSeatgeek.parseArrays(ScrapeSeatgeek.runScrape(), CONCERT_AND_PRICES)
+    def newScrape(self):
+        self.CONCERT_AND_PRICES = ScrapeSeatgeek.parseArrays(ScrapeSeatgeek.runScrape(), self.CONCERT_AND_PRICES)
+    
+    def clear(self):
+        self.CONCERT_AND_PRICES = []
 
-for concert in CONCERT_AND_PRICES:
-    print(str(concert))
+    def __str__(self):
+        output = ""
+        for concert in self.CONCERT_AND_PRICES:
+            output += str(concert) + "\n"
+        return output
 
+data = ConcertStorage()
+print(data)
+
+data.newScrape()
+print(data)
