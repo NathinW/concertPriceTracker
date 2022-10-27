@@ -19,7 +19,7 @@ class ScrapeSeatgeek:
 
         eventList = driver.find_elements(By.TAG_NAME, 'ul')
         events = eventList[3].find_elements(By.TAG_NAME, 'li')
-
+        
         for event in events:
             ps = event.find_elements(By.TAG_NAME, 'p')
             concertName = "(" + ps[0].text + ") " + ps[1].text
